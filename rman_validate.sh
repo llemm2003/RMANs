@@ -1,5 +1,11 @@
 #!/bin/sh
 
+
+stampDateTime=`date --date "now -${intDay} days" +%Y%m%d%H%M`
+stampDate=`date --date "now -${intDay} days" +%Y%m%d`
+
+
+
 # Walk through DBNAMEs in oratab
 for dbname in `egrep -v "^(\#|\+|\$|\*)" /etc/oratab | egrep -v "dummy|ORCL|test" | egrep "^\w{3,9}" | cut -d ':' -f1 | uniq`; do
 
@@ -76,10 +82,12 @@ val_command="$val_command;"
 
 echo "$val_command" >> ${pathRMANScript}/rman_validate.rcv
 
+log_path=/u05/${dbname}/logs
+log_file=$log_path/rman_${dbname}_${stampDate}.log
+
 export NLS_DATE_FORMAT="dd-month-yyyy hh:mi:ss am"
-$ORACLE_HOME/bin/rman target / cmdfile=/home/oracle/rman/rman_validate.rcv log=$log_path/$log_file > /dev/null 2>&1
+$ORACLE_HOME/bin/rman target / cmdfile=/home/oracle/rman/rman_validate.rcv log=$log_file > /dev/null 2>&1
 
 echo "Validate completed at `/bin/date` "
 
 done
-[oracle@avvrollrdbu001a wget]$
