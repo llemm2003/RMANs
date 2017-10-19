@@ -24,7 +24,7 @@ for dbname in `egrep -v "^(\#|\+|\$|\*)" /etc/oratab | egrep -v "dummy|ORCL|test
          sidConnection=`/bin/ps -ef | /bin/grep -i ora_pmon_${dbname} | /bin/grep -v grep | /bin/awk '{print $8}' | /bin/sed 's/ora_pmon_//' | /bin/egrep -v sed`
         export ORACLE_SID="${sidConnection}"
 
-echo "oracle sid connection" $ORACLE_SID
+#echo "oracle sid connection" $ORACLE_SID
 
 # Determine SID to connect to by RMAN
 # export ORACLE_SID="${sidConnection}"
@@ -46,9 +46,6 @@ val_command="validate backupset "
 old_path=$PATH
 ORAENV_ASK=NO
 
-log_path=${pathRMANScript}
-log_file=`/bin/ls $log_path | /usr/bin/tail -1`
-
 #Function to extract values using sqlplus
 connect_to_sql () {
 SQL_OUTPUT=$( $ORACLE_HOME/bin/sqlplus -s / as sysdba<< OCI
@@ -64,13 +61,15 @@ echo "$SQL_OUTPUT"| /bin/grep -v \^$
 #MAIN
 #export ORACLE_SID
 export ORACLE_BASE=/u01/app/oracle
+log_path=/u05/${dbname}/logs
+log_file=$log_path/rman_${dbname}_${stampDate}.log
 
 INST_NAME=$(connect_to_sql "select name from v\$database;")
 RECID=$(connect_to_sql "select recid from v\$backup_set where incremental_level=1 and completion_time > sysdate-1;")
-echo "Validation of INC backupsets will run on DB: $INST_NAME"
-echo "Validate starting at `/bin/date` "
-echo "The backupsets will be validated:"
-echo "$RECID"
+#echo "Validation of INC backupsets will run on DB: $INST_NAME"
+#echo "Validate starting at `/bin/date` "
+#echo "The backupsets will be validated:"
+#echo "$RECID"
 
 for i in `echo "$RECID"`
 do
@@ -82,12 +81,9 @@ val_command="$val_command;"
 
 echo "$val_command" >> ${pathRMANScript}/rman_validate.rcv
 
-log_path=/u05/${dbname}/logs
-log_file=$log_path/rman_${dbname}_${stampDate}.log
-
 export NLS_DATE_FORMAT="dd-month-yyyy hh:mi:ss am"
 $ORACLE_HOME/bin/rman target / cmdfile=/home/oracle/rman/rman_validate.rcv log=$log_file > /dev/null 2>&1
 
-echo "Validate completed at `/bin/date` "
+echo "Validate completed at `/bin/date` " >> $log_file
 
 done
